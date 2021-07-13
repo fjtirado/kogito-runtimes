@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.kie.kogito.event;
+package org.kie.kogito.addon.cloudevents.quarkus.http;
 
-import java.io.IOException;
+import javax.enterprise.context.Dependent;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.ext.ExceptionMapper;
+import javax.ws.rs.ext.Provider;
 
-public interface EventConverter<S, T> {
-    Class<S> getInputClass();
+@Provider
+@Dependent
+public class CloudEventResourceExceptionMapper implements ExceptionMapper<CloudEventResourceException> {
 
-    Class<T> getOutputClass();
-
-    /**
-     * Converts input object to output object
-     * 
-     * @param input object
-     * @return ouput object
-     * @throws IOException if conversion cannot be performed. IMPORTANT!!!! any other exception will considered unexpected, so this implementation should not willingly throw any runtime exception
-     */
-    T apply(S input) throws IOException;
+    @Override
+    public Response toResponse(final CloudEventResourceException exception) {
+        return Responses.errorProcessingCloudEvent(exception);
+    }
 }

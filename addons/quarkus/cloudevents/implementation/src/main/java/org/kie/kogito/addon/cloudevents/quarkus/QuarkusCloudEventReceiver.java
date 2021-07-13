@@ -15,6 +15,7 @@
  */
 package org.kie.kogito.addon.cloudevents.quarkus;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -74,7 +75,13 @@ public class QuarkusCloudEventReceiver implements EventReceiver {
         CompletionStage<?> result = CompletableFuture.completedFuture(null);
         CompletionStage<?> future = result;
         for (Subscription<Object> subscription : consumers) {
-            future = future.thenCompose(f -> subscription.getConsumer().apply(subscription.getInfo().getConverter().apply(message)));
+            Object object;
+            try {
+                object = subscription.getInfo().getConverter().apply(message);
+                future = future.thenCompose(f -> subscription.getConsumer().apply(object));
+            } catch (IOException e) {
+                LOGGER.info("Cannot convert to {} from {}, ignoring type {}", subscription.getInfo().getConverter().getInputClass(), message, subscription.getInfo().getType());
+            }
         }
         if (callback != null) {
             future.whenComplete(callback);

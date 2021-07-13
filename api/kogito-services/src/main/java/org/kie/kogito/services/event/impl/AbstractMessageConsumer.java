@@ -15,7 +15,9 @@
  */
 package org.kie.kogito.services.event.impl;
 
+import java.io.IOException;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
@@ -106,7 +108,18 @@ public abstract class AbstractMessageConsumer<M extends Model, D, T extends Abst
     }
 
     protected CompletionStage<?> consumePayload(String payload) {
-        return consume(eventConverter.apply(payload));
+        try {
+            return consume(eventConverter.apply(payload));
+        } catch (IOException io) {
+            return failedFuture(io);
+        }
+    }
+
+    private CompletionStage<?> failedFuture(Throwable ex) {
+        // TODO since in Java 8 there is no CompletableFuture.failedFuture
+        CompletableFuture<?> future = new CompletableFuture<>();
+        future.completeExceptionally(ex);
+        return future;
     }
 
     @Override

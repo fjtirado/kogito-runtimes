@@ -56,14 +56,13 @@ public abstract class AbstractQuarkusCloudEventResource {
         objectMapper.registerModule(JsonFormat.getCloudEventJacksonModule());
     }
 
-    @POST()
+    @POST
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
     public CompletionStage<Response> cloudEventListener(CloudEvent event) {
         return CompletableFuture.completedFuture(serialize(event))
                 .thenCompose(publisher::produce)
-                .thenApply(r -> Response.ok().build())
-                .exceptionally(Responses::errorProcessingCloudEvent);
+                .thenApply(r -> Response.ok().type(MediaType.APPLICATION_JSON).build());
     }
 
     protected String serialize(CloudEvent event) {
@@ -80,16 +79,15 @@ public abstract class AbstractQuarkusCloudEventResource {
                 // This happens when a client sends the data in an arbitrary format without informing the Content-Type, instead of rejecting the request, we try to serialize it using JSON.
                 // If it's not a valid JSON, we throw the exception to be correctly handled by the controller (4xx error)
                 objectMapper.readTree(event.getData());
-                final CloudEvent newEvent = CloudEventBuilder.v1(event).withDataContentType(MediaType.APPLICATION_JSON)
-                        .build();
+                final CloudEvent newEvent = CloudEventBuilder.v1(event).withDataContentType(MediaType.APPLICATION_JSON).build();
                 final String newDecodedEvent = objectMapper.writeValueAsString(newEvent);
                 LOGGER.debug("Decoded event {}", newDecodedEvent);
                 return newDecodedEvent;
             } else {
                 return objectMapper.writeValueAsString(event);
             }
-        } catch (IOException io) {
-            throw new IllegalArgumentException(io);
+        } catch (IOException | IllegalArgumentException ex) {
+            throw new CloudEventResourceException(event, ex);
         }
     }
 
@@ -100,7 +98,7 @@ public abstract class AbstractQuarkusCloudEventResource {
      * @return true if the given content-type is not supported
      */
     private boolean isSupportedContentType(CloudEvent event) {
-        return event.getDataContentType() != null && MediaType.APPLICATION_JSON_TYPE.isCompatible(MediaType.valueOf(event.getDataContentType()));
+        return MediaType.APPLICATION_JSON_TYPE.isCompatible(MediaType.valueOf(event.getDataContentType()));
     }
 
 }

@@ -38,13 +38,9 @@ public class JsonStringToObject<T> implements EventConverter<String, T> {
     }
 
     @Override
-    public T apply(String value) {
-        try {
-            logger.debug("Converting event with payload{} ", value);
-            return objectMapper.readValue(value, clazz);
-        } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException(e);
-        }
+    public T apply(String value) throws JsonProcessingException {
+        logger.debug("Converting event with payload {} to class {} ", value, clazz);
+        return objectMapper.readValue(value, clazz);
     }
 
     @Override
