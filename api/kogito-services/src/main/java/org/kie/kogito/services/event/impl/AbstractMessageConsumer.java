@@ -97,9 +97,8 @@ public abstract class AbstractMessageConsumer<M extends Model, D, T extends Abst
 
     private CompletionStage<Void> consume(Object payload) {
         logger.debug("Received {} for trigger {}", payload, trigger);
-        CompletionStage<Void> result = eventConsumer.consume(application, process, payload, trigger);
-        logger.debug("Processed {} for trigger {}", payload, trigger);
-        return result;
+        return eventConsumer.consume(application, process, payload, trigger)
+                .thenAccept(e -> logger.debug("Processed {} for trigger {}", payload, trigger));
     }
 
     protected CompletionStage<Void> consumePayload(String payload) {

@@ -16,10 +16,8 @@
 package org.kie.kogito.addon.cloudevents.quarkus;
 
 import java.util.Collection;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import javax.annotation.PostConstruct;
@@ -35,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkus.runtime.Startup;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 @Startup
 @ApplicationScoped
@@ -57,29 +57,24 @@ public class QuarkusCloudEventReceiver implements EventReceiver {
     @Incoming(KogitoEventStreams.INCOMING)
     public CompletionStage<Void> onEvent(Message<String> message) {
         LOGGER.debug("Received message from channel {}: {}", KogitoEventStreams.INCOMING, message);
-        return produce(message.getPayload(), (v, e) -> {
-            LOGGER.debug("Acking message {}", message.getPayload());
-            message.ack();
-            if (e != null) {
-                LOGGER.error("Error processing message {}", message.getPayload(), e);
-            }
-        });
+        return produce(message.getPayload())
+                .thenCompose(r -> {
+                    LOGGER.debug("Acking message {}", message.getPayload());
+                    return message.ack();
+                })
+                .exceptionally(e -> {
+                    LOGGER.error("Error processing message {}", message.getPayload(), e);
+                    return null;
+                });
     }
 
     public CompletionStage<Void> produce(final String message) {
-        return produce(message, null);
-    }
-
-    public CompletionStage<Void> produce(final String message, BiConsumer<Object, Throwable> callback) {
-        CompletionStage<Void> result = CompletableFuture.completedFuture(null);
-        CompletionStage<Void> future = result;
-        for (Subscription<Object> subscription : consumers) {
-            future = future.thenCompose(f -> subscription.getConsumer().apply(subscription.getInfo().getConverter().apply(message)));
-        }
-        if (callback != null) {
-            future.whenComplete(callback);
-        }
-        return result;
+        return Multi.createFrom().iterable(consumers)
+                .onItem()
+                .transformToUniAndMerge(subscription -> Uni.createFrom().completionStage(subscription.getConsumer().apply(subscription.getInfo().getConverter().apply(message))))
+                .toUni()
+                .convert()
+                .toCompletionStage();
     }
 
     @Override

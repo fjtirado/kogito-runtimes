@@ -65,8 +65,9 @@ public class CloudEventConsumer<D, M extends Model, T extends AbstractProcessDat
                     trigger);
             Optional<ProcessInstance<M>> instance = process.instances().findById(cloudEvent.getKogitoReferenceId());
             if (instance.isPresent()) {
-                processService.signalProcessInstance((Process) process, cloudEvent.getKogitoProcessinstanceId(), cloudEvent.getData(), "Message-" + trigger);
-                return CompletableFuture.completedFuture(null);
+                return CompletableFuture
+                        .completedFuture(processService.signalProcessInstance((Process) process, cloudEvent.getKogitoProcessinstanceId(), cloudEvent.getData(), "Message-" + trigger))
+                        .thenApply(r -> null);
             } else {
                 logger.warn("Process instance with id '{}' not found for triggering signal '{}', starting a new one",
                         cloudEvent.getKogitoReferenceId(),
