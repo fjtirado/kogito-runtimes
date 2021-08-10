@@ -16,11 +16,17 @@
 package org.kogito.workitem.rest.bodybuilders;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 public class DefaultWorkItemHandlerBodyBuilder implements RestWorkItemHandlerBodyBuilder {
     @Override
     public Object apply(Object contentData, Map<String, Object> parameters, UnaryOperator<Object> resolver) {
-        return contentData;
+        return contentData != null ? contentData : buildMap(parameters, resolver);
+    }
+
+    static Map<String, Object> buildMap(Map<String, Object> parameters, UnaryOperator<Object> resolver) {
+        return parameters.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> resolver.apply(e.getValue())));
     }
 }

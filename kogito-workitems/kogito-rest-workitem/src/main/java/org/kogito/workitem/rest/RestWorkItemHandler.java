@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jbpm.process.core.Process;
 import org.jbpm.process.core.context.variable.Variable;
@@ -39,7 +38,6 @@ import org.kie.kogito.internal.process.runtime.KogitoWorkItem;
 import org.kie.kogito.internal.process.runtime.KogitoWorkItemHandler;
 import org.kie.kogito.internal.process.runtime.KogitoWorkItemManager;
 import org.kogito.workitem.rest.bodybuilders.DefaultWorkItemHandlerBodyBuilder;
-import org.kogito.workitem.rest.bodybuilders.ParamsRestWorkItemHandlerBodyBuilder;
 import org.kogito.workitem.rest.bodybuilders.RestWorkItemHandlerBodyBuilder;
 import org.kogito.workitem.rest.resulthandlers.DefaultRestWorkItemHandlerResult;
 import org.kogito.workitem.rest.resulthandlers.RestWorkItemHandlerResult;
@@ -69,9 +67,7 @@ public class RestWorkItemHandler implements KogitoWorkItemHandler {
     private static final Logger logger = LoggerFactory.getLogger(RestWorkItemHandler.class);
     private static final RestWorkItemHandlerResult DEFAULT_RESULT_HANDLER = new DefaultRestWorkItemHandlerResult();
     private static final RestWorkItemHandlerBodyBuilder DEFAULT_BODY_BUILDER = new DefaultWorkItemHandlerBodyBuilder();
-    private static final Map<String, RestWorkItemHandlerBodyBuilder> BODY_BUILDERS = Stream
-            .of(DEFAULT_BODY_BUILDER, new ParamsRestWorkItemHandlerBodyBuilder())
-            .collect(Collectors.toMap(b -> b.getClass().getSimpleName(), b -> b));
+    private static Map<String, RestWorkItemHandlerBodyBuilder> bodyBuilders = new ConcurrentHashMap<>();
 
     // package scoped to allow unit test
     static class RestUnaryOperator implements UnaryOperator<Object> {
@@ -148,7 +144,7 @@ public class RestWorkItemHandler implements KogitoWorkItemHandler {
             return (RestWorkItemHandlerBodyBuilder) param;
         }
         if (param instanceof String) {
-            return BODY_BUILDERS.get(param);
+            return bodyBuilders.computeIfAbsent(param.toString(), this::loadBodyBuilder);
         }
         throw new IllegalArgumentException("Invalid body builder instance " + param);
     }
@@ -162,6 +158,14 @@ public class RestWorkItemHandler implements KogitoWorkItemHandler {
                         return null;
                     }
                 });
+    }
+
+    private RestWorkItemHandlerBodyBuilder loadBodyBuilder(String className) {
+        try {
+            return Thread.currentThread().getContextClassLoader().loadClass(className).asSubclass(RestWorkItemHandlerBodyBuilder.class).getConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalArgumentException("Invalid class name " + className, e);
+        }
     }
 
     private RestWorkItemTargetInfo getTargetInfo(KogitoWorkItem workItem) {
