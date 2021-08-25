@@ -83,8 +83,6 @@ public class KafkaTestClient {
 
     public void consume(Collection<String> topics, Consumer<String> callback) {
         consumer.subscribe(topics);
-
-        CompletableFuture.runAsync(() -> {
             try {
                 latch.await();
                 while (!shutdown) {
@@ -95,6 +93,7 @@ public class KafkaTestClient {
                                 .map(ConsumerRecord::value)
                                 .forEach(callback::accept);
                     }
+                    consumer.commitSync();
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
