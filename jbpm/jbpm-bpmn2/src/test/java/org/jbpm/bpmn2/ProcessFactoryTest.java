@@ -368,8 +368,14 @@ public class ProcessFactoryTest extends JbpmBpmn2TestCase {
 
     }
 
+<<<<<<< 1_24_KOGITO-7557
     @Test
     public void testBoundaryErrorEvent() throws Exception {
+=======
+    @ParameterizedTest
+    @ValueSource(strings = { "java.lang.RuntimeException", "Unknown error", "(?i)Status code 400", "(.*)code 4[0-9]{2}", "code 4[0-9]{2}" })
+    public void testBoundaryErrorEvent(String errorCode) throws Exception {
+>>>>>>> e4bc300 KOGITO-7546: Improve regex handling in MessageContentExceptionPolicy (#2327)
         final String boundaryErrorEvent = "BoundaryErrorEvent";
         final String errorCode = "java.lang.RuntimeException";
         final String processId = "myProcess";

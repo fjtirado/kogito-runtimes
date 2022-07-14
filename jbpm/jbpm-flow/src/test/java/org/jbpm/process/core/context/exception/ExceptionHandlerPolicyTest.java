@@ -44,6 +44,7 @@ class ExceptionHandlerPolicyTest {
     }
 
     @ParameterizedTest
+<<<<<<< 1_24_KOGITO-7557
     @ValueSource(strings = { "java.lang.RuntimeException", "Unknown error", "(?i)Status code 400", "(.*)code 4[0-9]{2}", "code 4[0-9]{2}" })
     void testExceptionChainPolicyFactory(String errorString) {
         Throwable exception = new IOException(new RuntimeException("Unknown error, status code 400"));
@@ -51,6 +52,8 @@ class ExceptionHandlerPolicyTest {
     }
 
     @ParameterizedTest
+=======
+>>>>>>> e4bc300 KOGITO-7546: Improve regex handling in MessageContentExceptionPolicy (#2327)
     @ValueSource(strings = { "[" })
     void testInvalidRegexExceptionHandlerPolicyFactory(String errorString) {
         Throwable exception = new IllegalStateException("Unknown error, status code 400");
