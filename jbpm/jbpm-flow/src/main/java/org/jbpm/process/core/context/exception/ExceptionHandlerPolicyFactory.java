@@ -26,7 +26,12 @@ public class ExceptionHandlerPolicyFactory {
     private static Collection<ExceptionHandlerPolicy> policies = new ArrayList<>();
 
     static {
+<<<<<<< 1.24.x
         policies.add(new SubclassExceptionPolicy());
+=======
+        policies.add(new MessageContentRegexExceptionPolicy());
+        policies.add(new ErrorCodeExceptionPolicy());
+>>>>>>> e40ca71 [KOGITO-7557] Refining WorkItemHandlerException handling (#2333)
         policies.add(new RootCauseExceptionPolicy());
     }
 
