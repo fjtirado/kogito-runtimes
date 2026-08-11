@@ -18,6 +18,8 @@
  */
 package org.kie.kogito.event.impl;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.kie.api.event.process.ErrorEvent;
 import org.kie.api.event.process.ProcessCompletedEvent;
@@ -44,6 +46,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.kie.kogito.event.process.ProcessInstanceEventMetadata.PROCESS_ID_META_DATA;
+import static org.kie.kogito.event.process.ProcessInstanceEventMetadata.PROCESS_VERSION_META_DATA;
 
 public class ProcessInstanceEventBatchTest {
 
@@ -62,6 +65,29 @@ public class ProcessInstanceEventBatchTest {
     public void testServiceDefined() {
         assertThat(AdapterHelper.extractRuntimeSource("http://localhost:8080", singletonMap(PROCESS_ID_META_DATA, "travels"))).isEqualTo("http://localhost:8080/travels");
         assertThat(AdapterHelper.extractRuntimeSource("http://localhost:8080", singletonMap(PROCESS_ID_META_DATA, "demo.orders"))).isEqualTo("http://localhost:8080/orders");
+    }
+
+    @Test
+    public void testServiceDefinedWithVersion() {
+        // >= 1.39.0 runtimes: PROCESS_VERSION_META_DATA is present -> version must be appended to the source
+        assertThat(AdapterHelper.extractRuntimeSource("http://localhost:8080",
+                Map.of(PROCESS_ID_META_DATA, "travels", PROCESS_VERSION_META_DATA, "1.0"))).isEqualTo("http://localhost:8080/travels/1.0");
+        assertThat(AdapterHelper.extractRuntimeSource("http://localhost:8080",
+                Map.of(PROCESS_ID_META_DATA, "demo.orders", PROCESS_VERSION_META_DATA, "0.0.1"))).isEqualTo("http://localhost:8080/orders/0.0.1");
+    }
+
+    @Test
+    public void testBackwardCompat138() {
+        // 1.38.0 runtimes: events carry PROCESS_ID but NO PROCESS_VERSION -> source must NOT include version
+        assertThat(AdapterHelper.extractRuntimeSource("http://localhost:8080",
+                singletonMap(PROCESS_ID_META_DATA, "callbackstatetimeouts"))).isEqualTo("http://localhost:8080/callbackstatetimeouts");
+    }
+
+    @Test
+    public void testProcessIdWithSpaces() {
+        // Process IDs containing spaces must be sanitised (spaces replaced by dashes) in the source
+        assertThat(AdapterHelper.extractRuntimeSource("http://localhost:8080",
+                Map.of(PROCESS_ID_META_DATA, "my process", PROCESS_VERSION_META_DATA, "1.0"))).isEqualTo("http://localhost:8080/my-process/1.0");
     }
 
     @Test
