@@ -102,7 +102,7 @@ public class ProcessDefinitionEventRegistry {
                     .setMetadata(metadata);
             sourceFilesProvider.flatMap(provider -> provider.getProcessSourceFile(new KogitoProcessId(p.id(), p.version()))).map(this::readSourceFile).ifPresentOrElse(builder::setSource,
                     () -> LOGGER.warn("Not source found for process id {}", p.id()));
-            return new ProcessDefinitionDataEvent(builder.build());
+            return new ProcessDefinitionDataEvent(endpoint, builder.build());
         };
     }
 

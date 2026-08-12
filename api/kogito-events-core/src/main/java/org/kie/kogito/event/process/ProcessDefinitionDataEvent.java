@@ -28,9 +28,9 @@ public class ProcessDefinitionDataEvent extends AbstractDataEvent<ProcessDefinit
 
     }
 
-    public ProcessDefinitionDataEvent(ProcessDefinitionEventBody body) {
+    public ProcessDefinitionDataEvent(String serviceUrl, ProcessDefinitionEventBody body) {
         super(PROCESS_DEFINITION_EVENT,
-                body.getEndpoint(),
+                serviceUrl,
                 body,
                 null,
                 null,
@@ -41,5 +41,14 @@ public class ProcessDefinitionDataEvent extends AbstractDataEvent<ProcessDefinit
                 null,
                 DATA_CONTENT_TYPE,
                 null);
+    }
+
+    /**
+     * @deprecated Use {@link #ProcessDefinitionDataEvent(String, ProcessDefinitionEventBody)} to provide the
+     *             plain service URL as the CloudEvent source separately from the versioned endpoint.
+     */
+    @Deprecated
+    public ProcessDefinitionDataEvent(ProcessDefinitionEventBody body) {
+        this(body.getEndpoint(), body);
     }
 }
